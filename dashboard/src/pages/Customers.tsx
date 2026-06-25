@@ -24,7 +24,7 @@ export default function Customers() {
   const load = useCallback(() => {
     setLoading(true)
     api.get('/customers', { params: { page, limit: PAGE_SIZE, search } })
-      .then(r => { setCustomers(r.data.customers); setTotal(r.data.total) })
+      .then(r => { setCustomers(r.data.data ?? []); setTotal(r.data.meta?.total ?? 0) })
       .finally(() => setLoading(false))
   }, [page, search])
 

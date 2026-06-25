@@ -37,8 +37,13 @@ export async function buildApp() {
 
   await app.register(rateLimit, {
     global:     true,
-    max:        200,
+    max:        500,
     timeWindow: '1 minute',
+    // Use real client IP when behind nginx proxy, not the proxy's IP
+    keyGenerator: (request) => {
+      const forwarded = request.headers['x-forwarded-for']
+      return (typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : null) ?? request.ip
+    },
   })
 
   await app.register(jwt, { secret: env.JWT_SECRET })
