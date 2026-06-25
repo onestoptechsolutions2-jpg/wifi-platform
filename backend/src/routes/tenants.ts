@@ -168,19 +168,23 @@ const tenantsRoutes: FastifyPluginAsync = async (fastify) => {
 
 const tenantPatchSchema = z.object({
   // Identity
-  name:         z.string().optional(),
-  domain:       z.string().optional(),
+  name:         z.string().nullish(),
+  domain:       z.string().nullish(),
   plan:         z.enum(['starter','growth','pro']).optional(),
   status:       z.enum(['trial','active','suspended']).optional(),
-  // Branding
-  logoUrl:      z.string().optional(),
-  primaryColor: z.string().optional(),
-  bgColor:      z.string().optional(),
-  headline:     z.string().optional(),
-  subheadline:  z.string().optional(),
-  redirectUrl:  z.string().url().optional(),
+  // Branding — nullish so DB nulls round-trip without throwing
+  logoUrl:      z.string().nullish(),
+  primaryColor: z.string().nullish(),
+  bgColor:      z.string().nullish(),
+  headline:     z.string().nullish(),
+  subheadline:  z.string().nullish(),
+  // Empty string → null (clears the field); null/undefined → skip
+  redirectUrl:  z.preprocess(
+    v => (v === '' ? null : v),
+    z.string().url().nullish(),
+  ),
   sessionHours: z.number().min(1).max(24).optional(),
-  termsText:    z.string().optional(),
+  termsText:    z.string().nullish(),
   // Login methods
   loginEmail:        z.boolean().optional(),
   loginPhone:        z.boolean().optional(),
@@ -188,25 +192,31 @@ const tenantPatchSchema = z.object({
   loginFacebook:     z.boolean().optional(),
   loginClickthrough: z.boolean().optional(),
   // MikroTik
-  mkHost:      z.string().optional(),
+  mkHost:      z.string().nullish(),
   mkPort:      z.number().default(8728).optional(),
-  mkUser:      z.string().optional(),
-  mkPassword:  z.string().optional(),   // plaintext — encrypted before storage
-  mkInterface: z.string().optional(),
+  mkUser:      z.string().nullish(),
+  mkPassword:  z.string().nullish(),   // plaintext — encrypted before storage
+  mkInterface: z.string().nullish(),
   // Billing
-  billingEmail: z.string().email().optional(),
-  lastPaidAt:   z.string().datetime().optional(),
+  billingEmail: z.string().email().nullish(),
+  lastPaidAt:   z.string().datetime().nullish(),
+  nextBillDate: z.string().datetime().nullish(),
+  billingNotes: z.string().nullish(),
 })
 
 type TenantPatch = z.infer<typeof tenantPatchSchema>
 
 function buildUpdateData(body: TenantPatch) {
-  const { mkPassword, lastPaidAt, ...rest } = body
-  return {
-    ...rest,
-    ...(mkPassword            ? { mkPasswordEnc: encrypt(mkPassword) } : {}),
-    ...(lastPaidAt            ? { lastPaidAt: new Date(lastPaidAt) }   : {}),
+  const { mkPassword, lastPaidAt, nextBillDate, ...rest } = body
+  // Include nulls (clears DB fields), omit undefineds (no-op for that column)
+  const data: Record<string, any> = {}
+  for (const [k, v] of Object.entries(rest)) {
+    if (v !== undefined) data[k] = v
   }
+  if (mkPassword)   data.mkPasswordEnc = encrypt(mkPassword)
+  if (lastPaidAt)   data.lastPaidAt    = new Date(lastPaidAt)
+  if (nextBillDate) data.nextBillDate  = new Date(nextBillDate)
+  return data
 }
 
 export default tenantsRoutes

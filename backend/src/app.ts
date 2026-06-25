@@ -62,6 +62,17 @@ export async function buildApp() {
   await app.register(prismaPlugin)
   await app.register(redisPlugin)
 
+  // ── Global error handler — converts ZodError to 400 ─────────────────────
+  app.setErrorHandler((err: any, _request, reply) => {
+    if (err.name === 'ZodError') {
+      return reply.status(400).send({ error: 'Validation error', issues: err.issues })
+    }
+    // Fastify built-in errors (rate limit, etc.) already have statusCode
+    const status = err.statusCode ?? err.status ?? 500
+    app.log.error(err)
+    return reply.status(status).send({ error: err.message ?? 'Internal server error' })
+  })
+
   // ── Health check ──────────────────────────────────────────────────────────
   app.get('/health', async () => ({ status: 'ok', ts: new Date().toISOString() }))
 
