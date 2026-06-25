@@ -2,19 +2,20 @@ import { useState } from 'react'
 import axios from 'axios'
 
 interface Props {
-  mac: string
+  mac:      string
+  tok?:     string  // OpenWRT/nodogsplash auth token
   termsText: string
   onSuccess: (redirectUrl: string) => void
 }
 
-export default function LoginClickthrough({ mac, termsText, onSuccess }: Props) {
+export default function LoginClickthrough({ mac, tok, termsText, onSuccess }: Props) {
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState('')
 
   const connect = async () => {
     setError(''); setLoading(true)
     try {
-      const { data } = await axios.post('/portal/auth/clickthrough', { mac })
+      const { data } = await axios.post('/portal/auth/clickthrough', { mac, tok })
       onSuccess(data.redirectUrl)
     } catch (err: any) {
       setError(err.response?.data?.error ?? 'Connection failed. Please try again.')

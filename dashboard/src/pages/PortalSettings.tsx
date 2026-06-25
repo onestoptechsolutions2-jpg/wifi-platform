@@ -137,12 +137,66 @@ export default function PortalSettings() {
 
             <div style={{ marginTop: '1.5rem', padding: '0.875rem', background: 'var(--bg)', borderRadius: 8, fontSize: '0.82rem', color: 'var(--muted)' }}>
               <strong>Portal domain:</strong><br />
-              <code style={{ wordBreak: 'break-all' }}>https://wifi.yourdomain.com</code>
-              <br /><br />
-              <strong>MikroTik redirect URL to set:</strong><br />
-              <code>http://wifi.yourdomain.com</code>
+              <code style={{ wordBreak: 'break-all' }}>{(s as any)?.domain ? `https://${(s as any).domain}` : 'https://wifi.yourdomain.com'}</code>
             </div>
           </div>
+        </div>
+
+        {/* ── Router / Vendor setup hint ─────────────────────────────── */}
+        <div className="card" style={{ marginTop: '1.5rem' }}>
+          <h2 style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Router Setup</h2>
+          {(() => {
+            const vendor = (s as any)?.vendorType ?? 'mikrotik'
+            const domain = (s as any)?.domain ? `https://${(s as any).domain}` : 'https://wifi.yourdomain.com'
+            const hints: Record<string, JSX.Element> = {
+              mikrotik: (
+                <p style={{ fontSize: '0.85rem', color: 'var(--muted)', lineHeight: 1.6 }}>
+                  <strong>MikroTik:</strong> In Winbox go to IP → Hotspot → Servers → Login tab.<br />
+                  Set <em>Login Page</em> to <strong>External</strong> and <em>Redirect</em> to:{' '}
+                  <code style={{ background: 'var(--bg2, #f5f5f5)', padding: '0 4px', borderRadius: 4 }}>{domain}</code>
+                </p>
+              ),
+              unifi: (
+                <p style={{ fontSize: '0.85rem', color: 'var(--muted)', lineHeight: 1.6 }}>
+                  <strong>UniFi:</strong> Network → Settings → Guest Hotspot → External Portal Server.<br />
+                  Set Portal URL to:{' '}
+                  <code style={{ background: 'var(--bg2, #f5f5f5)', padding: '0 4px', borderRadius: 4 }}>{domain}</code>
+                </p>
+              ),
+              omada: (
+                <p style={{ fontSize: '0.85rem', color: 'var(--muted)', lineHeight: 1.6 }}>
+                  <strong>Omada:</strong> Settings → Authentication → Portal → External Portal Server.<br />
+                  Set Portal URL to:{' '}
+                  <code style={{ background: 'var(--bg2, #f5f5f5)', padding: '0 4px', borderRadius: 4 }}>{domain}</code>
+                </p>
+              ),
+              openwrt: (
+                <p style={{ fontSize: '0.85rem', color: 'var(--muted)', lineHeight: 1.6 }}>
+                  <strong>OpenWRT / nodogsplash:</strong> Set <code>RedirectURL</code> in{' '}
+                  <code>/etc/nodogsplash/nodogsplash.conf</code> to:{' '}
+                  <code style={{ background: 'var(--bg2, #f5f5f5)', padding: '0 4px', borderRadius: 4 }}>{domain}</code>
+                </p>
+              ),
+              radius: (
+                <p style={{ fontSize: '0.85rem', color: 'var(--muted)', lineHeight: 1.6 }}>
+                  <strong>RADIUS / Generic:</strong> Configure your NAS to redirect unauthenticated clients to:{' '}
+                  <code style={{ background: 'var(--bg2, #f5f5f5)', padding: '0 4px', borderRadius: 4 }}>{domain}</code><br />
+                  Contact your platform administrator to configure RADIUS credentials.
+                </p>
+              ),
+              none: (
+                <p style={{ fontSize: '0.85rem', color: 'var(--muted)', lineHeight: 1.6 }}>
+                  <strong>Manual / No vendor:</strong> Your hardware handles access control externally.
+                  Ensure your router redirects unauthenticated clients to:{' '}
+                  <code style={{ background: 'var(--bg2, #f5f5f5)', padding: '0 4px', borderRadius: 4 }}>{domain}</code>
+                </p>
+              ),
+            }
+            return hints[vendor] ?? hints.mikrotik
+          })()}
+          <p style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: '0.5rem' }}>
+            Router credentials are managed by your platform administrator.
+          </p>
         </div>
 
         <div style={{ marginTop: '1.25rem' }}>

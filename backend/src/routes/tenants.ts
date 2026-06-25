@@ -17,6 +17,7 @@ import bcrypt from 'bcrypt'
 import { z } from 'zod'
 import { encrypt, decrypt } from '../utils/crypto.js'
 import { mikrotikTestConnection } from '../services/mikrotik.js'
+import { testVendorConnection, mergeEncryptedPassword, type VendorType } from '../services/vendor.js'
 
 const tenantsRoutes: FastifyPluginAsync = async (fastify) => {
 
@@ -132,17 +133,25 @@ const tenantsRoutes: FastifyPluginAsync = async (fastify) => {
     const { id } = request.params as { id: string }
     const tenant = await fastify.prisma.tenant.findUniqueOrThrow({ where: { id } })
 
-    if (!tenant.mkHost || !tenant.mkUser || !tenant.mkPasswordEnc) {
-      return reply.status(400).send({ error: 'MikroTik not configured for this tenant' })
+    const vendorType = (tenant.vendorType ?? 'mikrotik') as VendorType
+
+    if (vendorType === 'mikrotik') {
+      // Use existing MikroTik-specific columns
+      if (!tenant.mkHost || !tenant.mkUser || !tenant.mkPasswordEnc) {
+        return reply.status(400).send({ error: 'MikroTik not configured for this tenant' })
+      }
+      const result = await mikrotikTestConnection({
+        host:     tenant.mkHost,
+        port:     tenant.mkPort,
+        username: tenant.mkUser,
+        password: decrypt(tenant.mkPasswordEnc),
+      })
+      return reply.send(result)
     }
 
-    const result = await mikrotikTestConnection({
-      host:     tenant.mkHost,
-      port:     tenant.mkPort,
-      username: tenant.mkUser,
-      password: decrypt(tenant.mkPasswordEnc),
-    })
-
+    // Non-MikroTik vendors use vendorConfig JSON
+    const cfg = (tenant.vendorConfig as Record<string, any>) ?? {}
+    const result = await testVendorConnection(vendorType, cfg)
     return reply.send(result)
   })
 
@@ -197,6 +206,10 @@ const tenantPatchSchema = z.object({
   mkUser:      z.string().nullish(),
   mkPassword:  z.string().nullish(),   // plaintext — encrypted before storage
   mkInterface: z.string().nullish(),
+  // Hardware vendor
+  vendorType:     z.string().nullish(),   // mikrotik | unifi | omada | openwrt | radius | none
+  vendorConfig:   z.record(z.any()).nullish(), // JSON blob — passwords must already be encrypted OR use vendorPassword
+  vendorPassword: z.string().nullish(),   // new plain-text password for non-MikroTik vendor (encrypted server-side)
   // Billing
   billingEmail: z.string().email().nullish(),
   lastPaidAt:   z.string().datetime().nullish(),
@@ -207,7 +220,7 @@ const tenantPatchSchema = z.object({
 type TenantPatch = z.infer<typeof tenantPatchSchema>
 
 function buildUpdateData(body: TenantPatch) {
-  const { mkPassword, lastPaidAt, nextBillDate, ...rest } = body
+  const { mkPassword, lastPaidAt, nextBillDate, vendorPassword, vendorConfig, ...rest } = body
   // Include nulls (clears DB fields), omit undefineds (no-op for that column)
   const data: Record<string, any> = {}
   for (const [k, v] of Object.entries(rest)) {
@@ -216,6 +229,16 @@ function buildUpdateData(body: TenantPatch) {
   if (mkPassword)   data.mkPasswordEnc = encrypt(mkPassword)
   if (lastPaidAt)   data.lastPaidAt    = new Date(lastPaidAt)
   if (nextBillDate) data.nextBillDate  = new Date(nextBillDate)
+  // Merge vendorConfig + encrypt vendorPassword if provided
+  if (vendorConfig !== undefined) {
+    data.vendorConfig = vendorPassword
+      ? mergeEncryptedPassword(vendorConfig, vendorPassword)
+      : (vendorConfig ?? null)
+  } else if (vendorPassword) {
+    // Password changed but config not re-sent — patch only the passwordEnc key
+    // (caller should always send full config; this is a safety fallback)
+    data.vendorConfig = { passwordEnc: encrypt(vendorPassword) }
+  }
   return data
 }
 

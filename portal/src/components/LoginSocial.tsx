@@ -3,6 +3,7 @@ import axios from 'axios'
 
 interface Props {
   mac:          string
+  tok?:         string  // OpenWRT/nodogsplash auth token
   termsText:    string
   showGoogle:   boolean
   showFacebook: boolean
@@ -19,7 +20,7 @@ declare global {
 }
 
 export default function LoginSocial({
-  mac, termsText, showGoogle, showFacebook,
+  mac, tok, termsText, showGoogle, showFacebook,
   googleClientId, facebookAppId, onSuccess
 }: Props) {
   const [consent, setConsent] = useState(false)
@@ -28,7 +29,7 @@ export default function LoginSocial({
 
   // Backend field name is `accessToken` — was incorrectly `token` before
   const exchange = async (provider: 'google' | 'facebook', accessToken: string) => {
-    const { data } = await axios.post('/portal/auth/social', { provider, accessToken, mac })
+    const { data } = await axios.post('/portal/auth/social', { provider, accessToken, mac, tok })
     onSuccess(data.redirectUrl)
   }
 

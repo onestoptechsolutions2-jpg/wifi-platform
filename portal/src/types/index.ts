@@ -23,8 +23,9 @@ export interface TenantConfig {
 }
 
 export interface PortalParams {
-  mac: string          // Device MAC address passed by hardware
-  ap:  string          // Access point MAC
-  url: string          // Original URL the user tried to visit
-  id:  string          // MikroTik hotspot challenge ID
+  mac: string   // Device MAC address passed by hardware
+  ap:  string   // Access point MAC
+  url: string   // Original URL the user tried to visit
+  id:  string   // MikroTik hotspot challenge ID
+  tok: string   // OpenWRT/nodogsplash auth token (empty string for other vendors)
 }

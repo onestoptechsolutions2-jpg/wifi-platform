@@ -97,6 +97,10 @@ model Tenant {
   loginFacebook     Boolean @default(false) @map("login_facebook")
   loginClickthrough Boolean @default(true)  @map("login_clickthrough")
 
+  // Hardware vendor — mikrotik | unifi | omada | openwrt | radius | none
+  vendorType   String  @default("mikrotik") @map("vendor_type")
+  vendorConfig Json?   @map("vendor_config")  // vendor-specific credentials (passwords AES-256 encrypted)
+
   // MikroTik router credentials (password stored AES-256 encrypted)
   mkHost        String? @map("mk_host")         // IP or hostname
   mkPort        Int     @default(8728) @map("mk_port")

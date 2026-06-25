@@ -68,14 +68,15 @@ export default function Portal({ config, params }: Props) {
 
       {/* Login forms */}
       {activeTab === 'email' && loginMethods.email && (
-        <LoginEmail mac={params.mac} termsText={branding.termsText} onSuccess={handleSuccess} />
+        <LoginEmail mac={params.mac} tok={params.tok} termsText={branding.termsText} onSuccess={handleSuccess} />
       )}
       {activeTab === 'phone' && loginMethods.phone && (
-        <LoginPhone mac={params.mac} termsText={branding.termsText} onSuccess={handleSuccess} />
+        <LoginPhone mac={params.mac} tok={params.tok} termsText={branding.termsText} onSuccess={handleSuccess} />
       )}
       {activeTab === 'social' && (
         <LoginSocial
           mac={params.mac}
+          tok={params.tok}
           termsText={branding.termsText}
           showGoogle={loginMethods.google}
           showFacebook={loginMethods.facebook}
@@ -85,7 +86,7 @@ export default function Portal({ config, params }: Props) {
         />
       )}
       {activeTab === 'clickthrough' && loginMethods.clickthrough && (
-        <LoginClickthrough mac={params.mac} termsText={branding.termsText} onSuccess={handleSuccess} />
+        <LoginClickthrough mac={params.mac} tok={params.tok} termsText={branding.termsText} onSuccess={handleSuccess} />
       )}
     </div>
   )

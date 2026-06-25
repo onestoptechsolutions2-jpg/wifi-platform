@@ -8,12 +8,12 @@
  * POST /portal/auth/clickthrough   — click-through (no data)
  *
  * All routes resolve tenant from Host header.
- * On success, call MikroTik to grant access and return session info.
+ * On success, call the configured vendor service to grant access and return session info.
  */
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { resolveTenant } from '../../middleware/tenant.js'
-import { mikrotikGrantAccess } from '../../services/mikrotik.js'
+import { grantAccess } from '../../services/vendor.js'
 import { sendOtp } from '../../services/sms.js'
 import { generateOtp } from '../../utils/crypto.js'
 import { addMinutes, addHours } from 'date-fns'
@@ -35,6 +35,7 @@ async function createSession(
   mac: string,
   method: string,
   request: any,
+  tok?: string,  // OpenWRT nodogsplash token (from ?tok= query param)
 ) {
   const tenant = await fastify.prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } })
   const expiresAt = addHours(new Date(), tenant.sessionHours)
@@ -50,11 +51,11 @@ async function createSession(
     },
   })
 
-  // Grant internet access via MikroTik
+  // Grant internet access via the configured vendor
   try {
-    await mikrotikGrantAccess(tenant, mac)
+    await grantAccess(tenant, mac, tok)
   } catch (err: any) {
-    fastify.log.warn({ err, mac, tenantId }, 'MikroTik grant failed — session created but access not granted')
+    fastify.log.warn({ err, mac, tenantId, vendor: tenant.vendorType }, 'Vendor grant failed — session created but access not granted')
   }
 
   return { session, redirectUrl: tenant.redirectUrl }
@@ -131,6 +132,7 @@ const portalAuthRoutes: FastifyPluginAsync = async (fastify) => {
       name:  z.string().min(1).max(100),
       email: z.string().email(),
       mac:   z.string().regex(/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/),
+      tok:   z.string().optional(),  // OpenWRT nodogsplash token
     }).parse(request.body)
 
     if (!request.tenant.loginEmail) {
@@ -144,7 +146,7 @@ const portalAuthRoutes: FastifyPluginAsync = async (fastify) => {
     })
 
     const { session, redirectUrl } = await createSession(
-      fastify, request.tenant.id, customer?.id ?? null, body.mac, 'email', request
+      fastify, request.tenant.id, customer?.id ?? null, body.mac, 'email', request, body.tok
     )
 
     return reply.send({ sessionId: session.id, redirectUrl })
@@ -208,6 +210,7 @@ const portalAuthRoutes: FastifyPluginAsync = async (fastify) => {
       otp:   z.string().length(6),
       name:  z.string().min(1).max(100).optional(),
       mac:   z.string().regex(/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/),
+      tok:   z.string().optional(),  // OpenWRT nodogsplash token
     }).parse(request.body)
 
     const stored = await fastify.redis.get(`otp:${request.tenant.id}:${body.phone}`)
@@ -226,7 +229,7 @@ const portalAuthRoutes: FastifyPluginAsync = async (fastify) => {
     })
 
     const { session, redirectUrl } = await createSession(
-      fastify, request.tenant.id, customer?.id ?? null, body.mac, 'phone', request
+      fastify, request.tenant.id, customer?.id ?? null, body.mac, 'phone', request, body.tok
     )
 
     return reply.send({ sessionId: session.id, redirectUrl })
@@ -240,6 +243,7 @@ const portalAuthRoutes: FastifyPluginAsync = async (fastify) => {
       provider:    z.enum(['google', 'facebook']),
       accessToken: z.string(),
       mac:         z.string().regex(/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/),
+      tok:         z.string().optional(),  // OpenWRT nodogsplash token
     }).parse(request.body)
 
     if (body.provider === 'google' && !request.tenant.loginGoogle) {
@@ -279,7 +283,7 @@ const portalAuthRoutes: FastifyPluginAsync = async (fastify) => {
     })
 
     const { session, redirectUrl } = await createSession(
-      fastify, request.tenant.id, customer?.id ?? null, body.mac, body.provider, request
+      fastify, request.tenant.id, customer?.id ?? null, body.mac, body.provider, request, body.tok
     )
 
     return reply.send({ sessionId: session.id, redirectUrl })
@@ -291,6 +295,7 @@ const portalAuthRoutes: FastifyPluginAsync = async (fastify) => {
   }, async (request, reply) => {
     const body = z.object({
       mac: z.string().regex(/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/),
+      tok: z.string().optional(),  // OpenWRT nodogsplash token
     }).parse(request.body)
 
     if (!request.tenant.loginClickthrough) {
@@ -298,7 +303,7 @@ const portalAuthRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     const { session, redirectUrl } = await createSession(
-      fastify, request.tenant.id, null, body.mac, 'clickthrough', request
+      fastify, request.tenant.id, null, body.mac, 'clickthrough', request, body.tok
     )
 
     return reply.send({ sessionId: session.id, redirectUrl })

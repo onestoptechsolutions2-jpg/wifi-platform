@@ -2,12 +2,13 @@ import { useState } from 'react'
 import axios from 'axios'
 
 interface Props {
-  mac: string
+  mac:      string
+  tok?:     string  // OpenWRT/nodogsplash auth token
   termsText: string
   onSuccess: (redirectUrl: string) => void
 }
 
-export default function LoginEmail({ mac, termsText, onSuccess }: Props) {
+export default function LoginEmail({ mac, tok, termsText, onSuccess }: Props) {
   const [name,    setName]    = useState('')
   const [email,   setEmail]   = useState('')
   const [consent, setConsent] = useState(false)
@@ -20,7 +21,7 @@ export default function LoginEmail({ mac, termsText, onSuccess }: Props) {
     setError(''); setLoading(true)
 
     try {
-      const { data } = await axios.post('/portal/auth/email', { name, email, mac })
+      const { data } = await axios.post('/portal/auth/email', { name, email, mac, tok })
       onSuccess(data.redirectUrl)
     } catch (err: any) {
       setError(err.response?.data?.error ?? 'Something went wrong. Please try again.')

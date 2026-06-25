@@ -26,13 +26,22 @@ export function useTenantConfig() {
   return { config, loading, error }
 }
 
-/** Extract query params passed by MikroTik hardware */
+/**
+ * Extract query params from the captive portal redirect URL.
+ * Different vendors use different param names:
+ *   MikroTik   — ?mac=MAC&ap=AP&url=URL&id=ID
+ *   UniFi      — ?mac=MAC&ap=AP&url=URL&id=ID&ssid=SSID
+ *   Omada      — ?clientMac=MAC&apMac=AP&redirectUrl=URL&token=TOKEN
+ *   OpenWRT    — ?clientmac=MAC&gatewayname=GW&tok=TOKEN&redir=URL
+ *   nodogsplash— ?clientip=IP&clientmac=MAC&tok=TOKEN&redir=URL
+ */
 export function usePortalParams() {
-  const params = new URLSearchParams(window.location.search)
+  const p = new URLSearchParams(window.location.search)
   return {
-    mac: params.get('mac') ?? '',
-    ap:  params.get('ap')  ?? '',
-    url: params.get('url') ?? 'https://google.com',
-    id:  params.get('id')  ?? '',
+    mac: p.get('mac') ?? p.get('clientMac') ?? p.get('clientmac') ?? '',
+    ap:  p.get('ap')  ?? p.get('apMac')     ?? '',
+    url: p.get('url') ?? p.get('redirectUrl') ?? p.get('redir') ?? 'https://google.com',
+    id:  p.get('id')  ?? '',
+    tok: p.get('tok') ?? p.get('token') ?? '',  // OpenWRT/nodogsplash/Omada auth token
   }
 }
