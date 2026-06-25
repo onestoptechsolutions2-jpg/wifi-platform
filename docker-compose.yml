@@ -82,7 +82,7 @@ services:
         VITE_FACEBOOK_APP_ID:  ${VITE_FACEBOOK_APP_ID:-}
     restart: unless-stopped
     ports:
-      - "3000:80"
+      - "3003:80"
     depends_on:
       - backend
 
