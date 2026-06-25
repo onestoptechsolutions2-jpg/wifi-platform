@@ -10,11 +10,11 @@ const twilioClient = env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN
 
 export async function sendSms(to: string, message: string): Promise<boolean> {
   // Try Twilio first
-  if (twilioClient && env.TWILIO_PHONE_NUMBER) {
+  if (twilioClient && env.TWILIO_FROM) {
     try {
       await twilioClient.messages.create({
         body: message,
-        from: env.TWILIO_PHONE_NUMBER,
+        from: env.TWILIO_FROM,
         to,
       })
       return true

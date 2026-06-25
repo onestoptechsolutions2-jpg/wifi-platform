@@ -13,29 +13,27 @@ const schema = z.object({
 
   ENCRYPTION_KEY: z.string().min(32),
 
-  TWILIO_ACCOUNT_SID:  z.string().optional(),
-  TWILIO_AUTH_TOKEN:   z.string().optional(),
-  TWILIO_PHONE_NUMBER: z.string().optional(),
+  // SMS — Twilio (primary)
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN:  z.string().optional(),
+  TWILIO_FROM:        z.string().optional(),
 
-  AT_API_KEY:   z.string().optional(),
-  AT_USERNAME:  z.string().optional(),
+  // SMS — Africa's Talking (fallback)
+  AT_API_KEY:  z.string().optional(),
+  AT_USERNAME: z.string().optional(),
+  AT_FROM:     z.string().optional(),
 
+  // Email — SendGrid
   SENDGRID_API_KEY: z.string().optional(),
   EMAIL_FROM:       z.string().email().default('noreply@yourplatform.com'),
   EMAIL_FROM_NAME:  z.string().default('WiFi Platform'),
 
-  GOOGLE_CLIENT_ID:     z.string().optional(),
-  GOOGLE_CLIENT_SECRET: z.string().optional(),
-
+  // Social login
+  GOOGLE_CLIENT_ID:    z.string().optional(),
   FACEBOOK_APP_ID:     z.string().optional(),
   FACEBOOK_APP_SECRET: z.string().optional(),
 
-  R2_ACCOUNT_ID:       z.string().optional(),
-  R2_ACCESS_KEY_ID:    z.string().optional(),
-  R2_SECRET_ACCESS_KEY: z.string().optional(),
-  R2_BUCKET_NAME:      z.string().optional(),
-  R2_PUBLIC_URL:       z.string().optional(),
-
+  // Seed defaults
   SUPER_ADMIN_EMAIL:    z.string().email().default('admin@yourplatform.com'),
   SUPER_ADMIN_PASSWORD: z.string().default('changeme'),
 })

@@ -10,8 +10,6 @@ services:
       POSTGRES_DB:       ${POSTGRES_DB:-wifi_platform}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "127.0.0.1:5432:5432"   # local only — Nginx sits in front
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-wifi}"]
       interval: 10s
@@ -24,8 +22,6 @@ services:
     command: redis-server --save 60 1 --loglevel warning
     volumes:
       - redis_data:/data
-    ports:
-      - "127.0.0.1:6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -37,12 +33,19 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
-    env_file: .env
     environment:
+      NODE_ENV:     production
+      PORT:         3000
       DATABASE_URL: postgresql://${POSTGRES_USER:-wifi}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-wifi_platform}
       REDIS_URL:    redis://redis:6379
+      # All other secrets injected via Coolify environment variables:
+      # JWT_SECRET, ENCRYPTION_KEY, SENDGRID_API_KEY, EMAIL_FROM, EMAIL_FROM_NAME,
+      # TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM,
+      # AT_API_KEY, AT_USERNAME, AT_FROM,
+      # GOOGLE_CLIENT_ID, FACEBOOK_APP_ID, FACEBOOK_APP_SECRET,
+      # SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASSWORD, ALLOWED_ORIGINS
     ports:
-      - "127.0.0.1:3000:3000"
+      - "3000:3000"
     depends_on:
       postgres:
         condition: service_healthy

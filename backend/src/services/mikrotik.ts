@@ -12,6 +12,7 @@
  */
 
 import net from 'net'
+import { createHash } from 'crypto'
 import { decrypt } from '../utils/crypto.js'
 import type { Tenant } from '@prisma/client'
 
@@ -171,10 +172,9 @@ function decodeWord(buf: Buffer): { word: string; consumed: number } {
 }
 
 function computeMd5Login(password: string, challenge: string): string {
-  const { createHash } = require('crypto')
   const challengeBuf = Buffer.from(challenge, 'hex')
-  const passBuf = Buffer.from(password, 'utf8')
-  const hash = createHash('md5')
+  const passBuf      = Buffer.from(password, 'utf8')
+  const hash         = createHash('md5')
   hash.update(Buffer.from([0]))
   hash.update(passBuf)
   hash.update(challengeBuf)
