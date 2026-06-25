@@ -4,7 +4,8 @@ import api from './lib/api'
 import Tenants from './pages/Tenants'
 import TenantDetail from './pages/TenantDetail'
 import Billing from './pages/Billing'
-import Plans from './pages/Plans'
+import Plans    from './pages/Plans'
+import Settings from './pages/Settings'
 
 /* ---- Auth context ---- */
 interface AuthCtx { user: any; loading: boolean; login: (e: string, p: string) => Promise<void>; logout: () => void }
@@ -33,9 +34,10 @@ function AuthProvider({ children }: { children: ReactNode }) {
 
 /* ---- Sidebar layout ---- */
 const navItems = [
-  { to: '/tenants', icon: '🏢', label: 'Tenants' },
-  { to: '/plans',   icon: '📋', label: 'Plans'   },
-  { to: '/billing', icon: '💳', label: 'Billing'  },
+  { to: '/tenants',  icon: '🏢', label: 'Tenants'  },
+  { to: '/plans',    icon: '📋', label: 'Plans'     },
+  { to: '/billing',  icon: '💳', label: 'Billing'   },
+  { to: '/settings', icon: '⚙️', label: 'Settings'  },
 ]
 
 function Layout() {
@@ -113,6 +115,7 @@ export default function App() {
           <Route path="tenants/:id"      element={<TenantDetail />} />
           <Route path="plans"            element={<Plans />} />
           <Route path="billing"          element={<Billing />} />
+          <Route path="settings"         element={<Settings />} />
         </Route>
         <Route path="*" element={<Navigate to="/tenants" replace />} />
       </Routes>
