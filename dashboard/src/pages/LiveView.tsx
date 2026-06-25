@@ -3,28 +3,32 @@ import api from '../lib/api'
 
 interface Session {
   id: string
-  macAddress: string
+  mac: string
   deviceType: string
   loginMethod: string
   grantedAt: string
-  durationMinutes: number
-  customer?: { name: string; email: string }
+  expiresAt: string
+  customer?: { name: string; email: string } | null
 }
 
 export default function LiveView() {
   const [sessions, setSessions] = useState<Session[]>([])
+  const [count,    setCount]    = useState(0)
   const [loading,  setLoading]  = useState(true)
   const intervalRef = useRef<ReturnType<typeof setInterval>>()
 
-  const fetch = () =>
+  const load = () =>
     api.get('/analytics/live')
-      .then(r => setSessions(r.data))
+      .then(r => {
+        setSessions(r.data.sessions ?? [])   // backend: { count, byLoginMethod, sessions }
+        setCount(r.data.count ?? 0)
+      })
       .catch(() => {})
       .finally(() => setLoading(false))
 
   useEffect(() => {
-    fetch()
-    intervalRef.current = setInterval(fetch, 10_000) // refresh every 10 s
+    load()
+    intervalRef.current = setInterval(load, 10_000)
     return () => clearInterval(intervalRef.current)
   }, [])
 
@@ -37,7 +41,7 @@ export default function LiveView() {
     <div className="page">
       <div className="page-header">
         <h1 className="page-title">Live View <span style={{ fontSize: '0.85rem', fontWeight: 400, color: 'var(--muted)' }}>— auto-refreshes every 10 s</span></h1>
-        <span className="badge badge-green" style={{ fontSize: '0.8rem' }}>● {sessions.length} online</span>
+        <span className="badge badge-green" style={{ fontSize: '0.8rem' }}>● {count} online</span>
       </div>
 
       {loading ? (
@@ -57,7 +61,7 @@ export default function LiveView() {
                 <th>Device</th>
                 <th>Login Method</th>
                 <th>Connected At</th>
-                <th>Duration</th>
+                <th>Expires At</th>
               </tr>
             </thead>
             <tbody>
@@ -67,11 +71,11 @@ export default function LiveView() {
                     <div style={{ fontWeight: 500 }}>{s.customer?.name ?? '—'}</div>
                     <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>{s.customer?.email ?? ''}</div>
                   </td>
-                  <td><code style={{ fontSize: '0.8rem' }}>{s.macAddress}</code></td>
-                  <td>{s.deviceType}</td>
+                  <td><code style={{ fontSize: '0.8rem' }}>{s.mac}</code></td>
+                  <td>{s.deviceType ?? '—'}</td>
                   <td><span className={`badge ${methodBadge[s.loginMethod] ?? 'badge-gray'}`}>{s.loginMethod}</span></td>
                   <td>{new Date(s.grantedAt).toLocaleTimeString()}</td>
-                  <td>{s.durationMinutes} min</td>
+                  <td>{new Date(s.expiresAt).toLocaleTimeString()}</td>
                 </tr>
               ))}
             </tbody>
