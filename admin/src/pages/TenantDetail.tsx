@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../lib/api'
+import RouterConfigModal from '../components/RouterConfigModal'
 
 // ── Vendor definitions (mirrors backend/src/services/vendor.ts) ───────────
 
@@ -93,6 +94,7 @@ export default function TenantDetail() {
 
   const [testing,    setTesting]    = useState(false)
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
+  const [showScript, setShowScript] = useState(false)
 
   useEffect(() => {
     api.get(`/tenants/${id}`).then(r => {
@@ -312,20 +314,25 @@ export default function TenantDetail() {
               </div>
             )}
 
-            {/* Test connection */}
-            {vendorType !== 'none' && (
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+            {/* Test connection + Config Script */}
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+              {vendorType !== 'none' && (
                 <button type="button" className="btn btn-outline btn-sm"
                   onClick={testConnection} disabled={testing}>
                   {testing ? <span className="spinner-sm" /> : '⚡ Test Connection'}
                 </button>
-                {testResult && (
-                  <span className={`badge ${testResult.ok ? 'badge-green' : 'badge-red'}`}>
-                    {testResult.ok ? '✓' : '✗'} {testResult.message}
-                  </span>
-                )}
-              </div>
-            )}
+              )}
+              <button type="button" className="btn btn-outline btn-sm"
+                onClick={() => setShowScript(true)}
+                style={{ borderColor: '#7C3AED', color: '#7C3AED' }}>
+                📄 Config Script
+              </button>
+              {testResult && (
+                <span className={`badge ${testResult.ok ? 'badge-green' : 'badge-red'}`}>
+                  {testResult.ok ? '✓' : '✗'} {testResult.message}
+                </span>
+              )}
+            </div>
 
             {/* Setup hints */}
             <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'var(--bg)',
@@ -363,6 +370,16 @@ export default function TenantDetail() {
           </button>
         </div>
       </form>
+
+      {/* NAS Config Script Modal */}
+      {showScript && tenant && (
+        <RouterConfigModal
+          tenantName={tenant.name}
+          domain={tenant.domain ?? 'wifi.yourdomain.com'}
+          vendorType={(tenant.vendorType ?? 'mikrotik') as any}
+          onClose={() => setShowScript(false)}
+        />
+      )}
     </div>
   )
 }

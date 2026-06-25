@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../lib/api'
+import RouterConfigModal from '../components/RouterConfigModal'
 
 interface Settings {
   name: string
@@ -19,10 +20,11 @@ interface Settings {
 }
 
 export default function PortalSettings() {
-  const [s,       setS]       = useState<Settings | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [saving,  setSaving]  = useState(false)
-  const [saved,   setSaved]   = useState(false)
+  const [s,          setS]          = useState<Settings | null>(null)
+  const [loading,    setLoading]    = useState(true)
+  const [saving,     setSaving]     = useState(false)
+  const [saved,      setSaved]      = useState(false)
+  const [showScript, setShowScript] = useState(false)
 
   useEffect(() => {
     api.get('/tenants/me').then(r => setS(r.data)).finally(() => setLoading(false))
@@ -194,9 +196,19 @@ export default function PortalSettings() {
             }
             return hints[vendor] ?? hints.mikrotik
           })()}
-          <p style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: '0.5rem' }}>
-            Router credentials are managed by your platform administrator.
-          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+            <p style={{ fontSize: '0.78rem', color: 'var(--muted)', margin: 0, flex: 1 }}>
+              Router credentials are managed by your platform administrator.
+            </p>
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              style={{ borderColor: '#7C3AED', color: '#7C3AED', flexShrink: 0 }}
+              onClick={() => setShowScript(true)}
+            >
+              📄 Generate Config Script
+            </button>
+          </div>
         </div>
 
         <div style={{ marginTop: '1.25rem' }}>
@@ -205,6 +217,16 @@ export default function PortalSettings() {
           </button>
         </div>
       </form>
+
+      {/* NAS Config Script Modal */}
+      {showScript && s && (
+        <RouterConfigModal
+          tenantName={(s as any).name ?? 'My Business'}
+          domain={(s as any).domain ?? 'wifi.yourdomain.com'}
+          vendorType={((s as any).vendorType ?? 'mikrotik') as any}
+          onClose={() => setShowScript(false)}
+        />
+      )}
     </div>
   )
 }
