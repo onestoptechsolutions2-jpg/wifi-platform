@@ -8,6 +8,7 @@ import Customers from './pages/Customers'
 import Campaigns from './pages/Campaigns'
 import PortalSettings from './pages/PortalSettings'
 import Reports from './pages/Reports'
+import Billing from './pages/Billing'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -27,6 +28,7 @@ function AppRoutes() {
         <Route path="campaigns"        element={<Campaigns />} />
         <Route path="portal-settings"  element={<PortalSettings />} />
         <Route path="reports"          element={<Reports />} />
+        <Route path="billing"          element={<Billing />} />
       </Route>
       <Route path="*" element={<Navigate to="/overview" replace />} />
     </Routes>

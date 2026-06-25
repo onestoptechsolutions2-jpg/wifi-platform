@@ -8,6 +8,7 @@ const navItems = [
   { to: '/campaigns',       icon: '📣', label: 'Campaigns' },
   { to: '/portal-settings', icon: '🎨', label: 'Portal Settings' },
   { to: '/reports',         icon: '📈', label: 'Reports' },
+  { to: '/billing',         icon: '💳', label: 'Billing' },
 ]
 
 export default function Layout() {

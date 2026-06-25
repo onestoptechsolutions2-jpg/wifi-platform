@@ -48,6 +48,22 @@ enum CampaignStatus {
   failed
 }
 
+enum PaymentGateway {
+  stripe
+  paystack
+  flutterwave
+  mpesa
+  pesapal
+  manual
+}
+
+enum PaymentStatus {
+  pending
+  completed
+  failed
+  refunded
+}
+
 enum UserRole {
   super_admin
   client_admin
@@ -89,14 +105,20 @@ model Tenant {
   mkInterface   String  @default("bridge") @map("mk_interface")
 
   // Billing
-  billingEmail String?   @map("billing_email")
-  lastPaidAt   DateTime? @map("last_paid_at")
+  billingEmail     String?        @map("billing_email")
+  lastPaidAt       DateTime?      @map("last_paid_at")
+  nextBillDate     DateTime?      @map("next_bill_date")
+  billingGateway   String?        @map("billing_gateway")   // stripe | paystack | flutterwave | mpesa | pesapal
+  stripeCustomerId String?        @map("stripe_customer_id")
+  stripeSubId      String?        @map("stripe_sub_id")
+  billingNotes     String?        @map("billing_notes")
 
   // Relations
   users     User[]
   customers Customer[]
   sessions  PortalSession[]
   campaigns Campaign[]
+  payments  Payment[]
 
   @@map("tenants")
 }
@@ -195,6 +217,25 @@ model Campaign {
   tenant Tenant @relation(fields: [tenantId], references: [id])
 
   @@map("campaigns")
+}
+
+model Payment {
+  id        String         @id @default(uuid())
+  tenantId  String         @map("tenant_id")
+  amount    Float          // major currency unit (e.g. 99.00 USD, 12000 KES)
+  currency  String         @default("USD")
+  gateway   PaymentGateway
+  reference String?        // gateway transaction / checkout ID
+  status    PaymentStatus  @default(pending)
+  plan      Plan
+  paidAt    DateTime?      @map("paid_at")
+  createdAt DateTime       @default(now()) @map("created_at")
+  metadata  Json?          // gateway-specific payload
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@map("payments")
 }
 
 model OtpCode {
