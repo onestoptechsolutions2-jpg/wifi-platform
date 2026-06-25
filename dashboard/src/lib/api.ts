@@ -22,7 +22,11 @@ api.interceptors.response.use(
         return api(err.config)
       } catch {
         localStorage.removeItem('access_token')
-        window.location.href = '/login'
+        // Guard: without this check, page reloads -> AuthProvider calls /auth/me
+        // -> 401 -> interceptor retries -> infinite loop (20-60s freeze in logs).
+        if (!window.location.pathname.startsWith('/login')) {
+          window.location.href = '/login'
+        }
       }
     }
     return Promise.reject(err)

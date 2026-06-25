@@ -20,7 +20,9 @@ api.interceptors.response.use(
         return api(err.config)
       } catch {
         localStorage.removeItem('sa_token')
-        window.location.href = '/login'
+        if (!window.location.pathname.startsWith('/login')) {
+          window.location.href = '/login'
+        }
       }
     }
     return Promise.reject(err)

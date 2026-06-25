@@ -25,38 +25,36 @@ interface Props {
 function scriptMikrotik(name: string, domain: string): string {
   const date = new Date().toLocaleDateString()
   return `# =================================================================
-# WiFi Platform — MikroTik HotSpot Setup Script
-# Tenant  : ${name}
-# Portal  : https://${domain}
+# WiFi Platform - MikroTik HotSpot Setup Script
+# Tenant   : ${name}
+# Portal   : https://${domain}
 # Generated: ${date}
 # =================================================================
-# Paste in Winbox → New Terminal, or run via SSH.
-# Requires RouterOS v6.x or v7.x with an active HotSpot profile.
+# Paste in Winbox > New Terminal, or run via SSH.
+# Requires RouterOS v6.x or v7.x with an active HotSpot server.
 
-# ── Step 1: Walled-garden (allow portal before auth) ──────────────
+# --- Step 1: Walled-garden (allow portal domain before auth) ------
 /ip hotspot walled-garden
 add dst-host="${domain}" comment="WiFi Platform portal"
-add dst-host="*.${domain}" comment="WiFi Platform (wildcard)"
+add dst-host="*.${domain}" comment="WiFi Platform wildcard"
 
-# ── Step 2: Set external login page on every hotspot profile ──────
+# --- Step 2: Point every hotspot profile at the external portal ---
 /ip hotspot profile
 set [find] login-page="https://${domain}" html-directory=""
 
-# ── Step 3: Restart hotspot services to apply changes ────────────
-:foreach h in=[/ip hotspot find] do={
-  /ip hotspot set $h disabled=yes
-  :delay 500ms
-  /ip hotspot set $h disabled=no
-}
+# --- Step 3: Restart hotspot servers to apply changes -------------
+:foreach h in=[/ip hotspot find] do={ /ip hotspot disable $h }
+:delay 2s
+:foreach h in=[/ip hotspot find] do={ /ip hotspot enable $h }
 
 :log info "WiFi Platform: HotSpot configured for ${domain}"
-:put "Done — portal URL: https://${domain}"
+:put "Done - portal URL: https://${domain}"
 
-# ── Notes ─────────────────────────────────────────────────────────
-# API credentials you set in the admin panel are used by the platform
-# to call /ip/hotspot/host/add when a user authenticates.
-# Ensure your API port (default 8728) is reachable from the server.
-# To restrict API access: /ip service set api address=SERVER_IP/32
+# --- Notes --------------------------------------------------------
+# The admin panel stores your RouterOS API credentials.
+# The platform calls /ip/hotspot/active/add to grant access on login.
+# Ensure API port 8728 is reachable from the platform server IP.
+# To lock API access: /ip service set api address=<SERVER_IP>/32
 `
 }
 
