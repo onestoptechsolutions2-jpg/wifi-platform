@@ -29,8 +29,6 @@ interface Tenant {
   billingGateway: string | null
 }
 
-const PLAN_PRICE: Record<string, number> = { starter: 99, growth: 199, pro: 349 }
-
 const GATEWAY_ICONS: Record<string, string> = {
   stripe:      '💳',
   paystack:    '🟩',
@@ -51,6 +49,7 @@ export default function Billing() {
   const [tenant,    setTenant]    = useState<Tenant | null>(null)
   const [gateways,  setGateways]  = useState<Gateway[]>([])
   const [history,   setHistory]   = useState<Payment[]>([])
+  const [planPrices, setPlanPrices] = useState<Record<string, number>>({})
   const [loading,   setLoading]   = useState(true)
   const [selected,  setSelected]  = useState<string>('')
   const [currency,  setCurrency]  = useState('KES')
@@ -65,10 +64,14 @@ export default function Billing() {
       api.get('/tenants/me'),
       api.get('/billing/gateways'),
       api.get('/billing/history'),
-    ]).then(([t, g, h]) => {
+      api.get('/plans'),
+    ]).then(([t, g, h, p]) => {
       setTenant(t.data)
       setGateways(g.data)
       setHistory(h.data)
+      const prices: Record<string, number> = {}
+      for (const plan of p.data) prices[plan.key] = plan.price
+      setPlanPrices(prices)
       const preferred = t.data.billingGateway ?? (g.data.find((gw: Gateway) => gw.configured)?.name ?? '')
       setSelected(preferred)
       setCurrency(GATEWAY_CURRENCIES[preferred] ?? 'KES')
@@ -148,7 +151,7 @@ export default function Billing() {
         <div className="card stat-card">
           <div className="stat-label">Current Plan</div>
           <div className="stat-value" style={{ textTransform: 'capitalize' }}>{tenant?.plan}</div>
-          <div className="stat-sub">${PLAN_PRICE[tenant?.plan ?? 'starter']}/mo</div>
+          <div className="stat-sub">${planPrices[tenant?.plan ?? ''] ?? '—'}/mo</div>
         </div>
         <div className="card stat-card">
           <div className="stat-label">Last Payment</div>
@@ -248,7 +251,7 @@ export default function Billing() {
                 disabled={paying || (stkStatus === 'pending')}
                 style={{ alignSelf: 'flex-start' }}
               >
-                {paying ? <span className="spinner-sm" /> : `Pay $${PLAN_PRICE[tenant?.plan ?? 'starter']}/mo via ${gateways.find(g => g.name === selected)?.label}`}
+                {paying ? <span className="spinner-sm" /> : `Pay $${planPrices[tenant?.plan ?? ''] ?? '—'}/mo via ${gateways.find(g => g.name === selected)?.label}`}
               </button>
 
               {selected !== 'mpesa' && (

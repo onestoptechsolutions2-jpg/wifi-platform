@@ -147,9 +147,9 @@ export default function LoginPhone({ mac, tok, termsText, onSuccess }: Props) {
         <div className="form-group">
           <label htmlFor="otp">Enter 6-digit code</label>
           <input
-            id="otp" type="number" value={otp}
-            onChange={e => setOtp(e.target.value)}
-            placeholder="123456" maxLength={6} required
+            id="otp" type="text" inputMode="numeric" pattern="[0-9]*"
+            value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
+            placeholder="123456" maxLength={6} required autoComplete="one-time-code"
             style={{ fontSize: '1.5rem', letterSpacing: '0.25em', textAlign: 'center' }}
           />
         </div>

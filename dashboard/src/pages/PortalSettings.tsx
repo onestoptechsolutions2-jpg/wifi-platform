@@ -3,7 +3,9 @@ import api from '../lib/api'
 import RouterConfigModal from '../components/RouterConfigModal'
 
 interface Settings {
-  name: string
+  name:         string
+  domain:       string
+  vendorType:   string
   logoUrl:      string
   primaryColor: string
   bgColor:      string
@@ -139,7 +141,7 @@ export default function PortalSettings() {
 
             <div style={{ marginTop: '1.5rem', padding: '0.875rem', background: 'var(--bg)', borderRadius: 8, fontSize: '0.82rem', color: 'var(--muted)' }}>
               <strong>Portal domain:</strong><br />
-              <code style={{ wordBreak: 'break-all' }}>{(s as any)?.domain ? `https://${(s as any).domain}` : 'https://wifi.yourdomain.com'}</code>
+              <code style={{ wordBreak: 'break-all' }}>{s.domain ? `https://${s.domain}` : 'https://wifi.yourdomain.com'}</code>
             </div>
           </div>
         </div>
@@ -148,8 +150,8 @@ export default function PortalSettings() {
         <div className="card" style={{ marginTop: '1.5rem' }}>
           <h2 style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Router Setup</h2>
           {(() => {
-            const vendor = (s as any)?.vendorType ?? 'mikrotik'
-            const domain = (s as any)?.domain ? `https://${(s as any).domain}` : 'https://wifi.yourdomain.com'
+            const vendor = s.vendorType ?? 'mikrotik'
+            const domain = s.domain ? `https://${s.domain}` : 'https://wifi.yourdomain.com'
             const hints: Record<string, JSX.Element> = {
               mikrotik: (
                 <p style={{ fontSize: '0.85rem', color: 'var(--muted)', lineHeight: 1.6 }}>
@@ -221,9 +223,9 @@ export default function PortalSettings() {
       {/* NAS Config Script Modal */}
       {showScript && s && (
         <RouterConfigModal
-          tenantName={(s as any).name ?? 'My Business'}
-          domain={(s as any).domain ?? 'wifi.yourdomain.com'}
-          vendorType={((s as any).vendorType ?? 'mikrotik') as any}
+          tenantName={s.name ?? 'My Business'}
+          domain={s.domain ?? 'wifi.yourdomain.com'}
+          vendorType={(s.vendorType ?? 'mikrotik') as any}
           onClose={() => setShowScript(false)}
         />
       )}

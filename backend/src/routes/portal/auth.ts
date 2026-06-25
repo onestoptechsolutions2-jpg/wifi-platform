@@ -115,15 +115,6 @@ async function upsertCustomer(
 
 const portalAuthRoutes: FastifyPluginAsync = async (fastify) => {
 
-  // Rate limit helper — 10 req/IP/min for all portal auth
-  const rateKey = (ip: string, action: string) => `ratelimit:portal:${action}:${ip}`
-  async function checkRateLimit(fastify: any, ip: string, action: string, max: number, windowSec: number) {
-    const key = rateKey(ip, action)
-    const current = await fastify.redis.incr(key)
-    if (current === 1) await fastify.redis.expire(key, windowSec)
-    if (current > max) throw { statusCode: 429, message: 'Too many requests. Please wait and try again.' }
-  }
-
   // ── Email login ───────────────────────────────────────────────────────
   fastify.post('/email', {
     preHandler: [resolveTenant],

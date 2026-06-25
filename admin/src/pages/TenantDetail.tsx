@@ -81,6 +81,7 @@ export default function TenantDetail() {
   const navigate = useNavigate()
 
   const [tenant,  setTenant]  = useState<any>(null)
+  const [plans,   setPlans]   = useState<{ key: string; label: string; price: number; currency: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [saving,  setSaving]  = useState(false)
   const [saved,   setSaved]   = useState(false)
@@ -97,10 +98,14 @@ export default function TenantDetail() {
   const [showScript, setShowScript] = useState(false)
 
   useEffect(() => {
-    api.get(`/tenants/${id}`).then(r => {
-      setTenant(r.data)
+    Promise.all([
+      api.get(`/tenants/${id}`),
+      api.get('/plans'),
+    ]).then(([tenantRes, plansRes]) => {
+      setTenant(tenantRes.data)
+      setPlans(plansRes.data)
       // Seed vendorCfg from DB (minus passwordEnc — never show it)
-      const cfg = { ...(r.data.vendorConfig ?? {}) }
+      const cfg = { ...(tenantRes.data.vendorConfig ?? {}) }
       delete cfg.passwordEnc
       delete cfg.radiusSecretEnc
       setVendorCfg(cfg)
@@ -194,9 +199,14 @@ export default function TenantDetail() {
               <div className="form-group">
                 <label>Plan</label>
                 <select value={tenant.plan} onChange={e => set('plan', e.target.value)}>
-                  <option value="starter">Starter – $99/mo</option>
-                  <option value="growth">Growth – $199/mo</option>
-                  <option value="pro">Pro – $349/mo</option>
+                  {plans.length === 0
+                    ? <option value={tenant.plan}>{tenant.plan}</option>
+                    : plans.map(p => (
+                        <option key={p.key} value={p.key}>
+                          {p.label} – {p.currency} {p.price}/mo
+                        </option>
+                      ))
+                  }
                 </select>
               </div>
               <div className="form-group">

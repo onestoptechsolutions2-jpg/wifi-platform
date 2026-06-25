@@ -134,12 +134,15 @@ const analyticsRoutes: FastifyPluginAsync = async (fastify) => {
     })
 
     // Group by date
-    const sessionsByDay: Record<string, number> = {}
-    const newCustomersByDay: Record<string, number> = {}
+    const sessionsByDay:     Record<string, number>                    = {}
+    const byMethodByDay:     Record<string, Record<string, number>>    = {}
+    const newCustomersByDay: Record<string, number>                    = {}
 
     for (const s of sessions) {
       const day = s.grantedAt.toISOString().slice(0, 10)
       sessionsByDay[day] = (sessionsByDay[day] ?? 0) + 1
+      if (!byMethodByDay[day]) byMethodByDay[day] = {}
+      byMethodByDay[day][s.loginMethod] = (byMethodByDay[day][s.loginMethod] ?? 0) + 1
     }
 
     for (const c of customers) {
@@ -157,6 +160,7 @@ const analyticsRoutes: FastifyPluginAsync = async (fastify) => {
         date:         key,
         sessions:     sessionsByDay[key] ?? 0,
         newCustomers: newCustomersByDay[key] ?? 0,
+        byMethod:     byMethodByDay[key] ?? {},
       })
     }
 
