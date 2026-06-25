@@ -7,11 +7,11 @@ const schema = z.object({
   REDIS_URL:       z.string().url(),
   ALLOWED_ORIGINS: z.string().default('http://localhost:5173'),
 
-  JWT_SECRET:          z.string().min(32),
+  JWT_SECRET:          z.string().min(32).default('wifiplatform-jwt-secret-change-in-production-x7k2'),
   JWT_ACCESS_EXPIRES:  z.string().default('15m'),
   JWT_REFRESH_EXPIRES: z.string().default('7d'),
 
-  ENCRYPTION_KEY: z.string().min(32),
+  ENCRYPTION_KEY: z.string().min(32).default('wifiplatform-enc-key-change-in-production-x7k2'),
 
   // SMS — Twilio (primary)
   TWILIO_ACCOUNT_SID: z.string().optional(),
