@@ -42,7 +42,8 @@ export default function Tenants() {
 
   const impersonate = async (id: string) => {
     const { data } = await api.post(`/tenants/${id}/impersonate`)
-    window.open(`http://localhost:5174?impersonate=${data.token}`, '_blank')
+    const dashboardUrl = import.meta.env.VITE_DASHBOARD_URL ?? `${window.location.protocol}//${window.location.hostname}:3001`
+    window.open(`${dashboardUrl}?impersonate=${data.token}`, '_blank')
   }
 
   return (
