@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 const schema = z.object({
   NODE_ENV:        z.enum(['development', 'staging', 'production']).default('development'),
-  PORT:            z.coerce.number().default(3000),
+  PORT:            z.coerce.number().default(4000),
   DATABASE_URL:    z.string().url(),
   REDIS_URL:       z.string().url(),
   ALLOWED_ORIGINS: z.string().default('http://localhost:5173'),
@@ -67,6 +67,12 @@ const schema = z.object({
   // Billing app URL (for redirect after payment)
   BILLING_SUCCESS_URL: z.string().url().default('http://localhost:3001/billing?success=1'),
   BILLING_CANCEL_URL:  z.string().url().default('http://localhost:3001/billing?cancelled=1'),
+
+  // Portal tenant resolution fallback
+  // When the incoming Host header doesn't match any tenant domain, fall back to this value.
+  // Useful in local dev (Host = "localhost") and on Coolify when Traefik strips/rewrites the host.
+  // Leave empty in production — each tenant should have a unique domain registered in the DB.
+  PORTAL_DEFAULT_DOMAIN: z.string().default('localhost'),
 
   // Seed defaults
   SUPER_ADMIN_EMAIL:    z.string().email().default('admin@yourplatform.com'),

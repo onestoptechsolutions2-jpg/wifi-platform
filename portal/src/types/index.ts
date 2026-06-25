@@ -10,6 +10,7 @@ export interface TenantConfig {
     termsText:    string
     redirectUrl:  string
   }
+  sessionHours:   number
   loginMethods: {
     email:        boolean
     phone:        boolean
@@ -17,6 +18,8 @@ export interface TenantConfig {
     facebook:     boolean
     clickthrough: boolean
   }
+  googleClientId: string | null
+  facebookAppId:  string | null
 }
 
 export interface PortalParams {

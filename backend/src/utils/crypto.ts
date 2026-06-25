@@ -1,3 +1,4 @@
+import { randomInt } from 'crypto'
 import CryptoJS from 'crypto-js'
 import { env } from '../config/env.js'
 
@@ -12,11 +13,11 @@ export function decrypt(ciphertext: string): string {
   return bytes.toString(CryptoJS.enc.Utf8)
 }
 
-/** Generate a random N-digit numeric string (for OTP) */
+/**
+ * Generate a cryptographically secure N-digit numeric OTP.
+ * Uses Node's built-in crypto.randomInt — NOT Math.random().
+ */
 export function generateOtp(length = 6): string {
-  let otp = ''
-  for (let i = 0; i < length; i++) {
-    otp += Math.floor(Math.random() * 10).toString()
-  }
-  return otp
+  const max = Math.pow(10, length)  // 1_000_000 for 6 digits
+  return randomInt(0, max).toString().padStart(length, '0')
 }

@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import axios from 'axios'
 import type { TenantConfig, PortalParams } from '../types'
 import LoginEmail from '../components/LoginEmail'
 import LoginPhone from '../components/LoginPhone'
@@ -14,7 +13,7 @@ interface Props {
 type Tab = 'email' | 'phone' | 'social' | 'clickthrough'
 
 export default function Portal({ config, params }: Props) {
-  const { branding, loginMethods } = config
+  const { branding, loginMethods, googleClientId, facebookAppId } = config
 
   // Determine available tabs
   const tabs: { id: Tab; label: string }[] = [
@@ -80,6 +79,8 @@ export default function Portal({ config, params }: Props) {
           termsText={branding.termsText}
           showGoogle={loginMethods.google}
           showFacebook={loginMethods.facebook}
+          googleClientId={googleClientId}
+          facebookAppId={facebookAppId}
           onSuccess={handleSuccess}
         />
       )}

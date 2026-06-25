@@ -2,11 +2,13 @@ import { useState } from 'react'
 import axios from 'axios'
 
 interface Props {
-  mac: string
-  termsText: string
-  showGoogle: boolean
+  mac:          string
+  termsText:    string
+  showGoogle:   boolean
   showFacebook: boolean
-  onSuccess: (redirectUrl: string) => void
+  googleClientId: string | null
+  facebookAppId:  string | null
+  onSuccess:    (redirectUrl: string) => void
 }
 
 declare global {
@@ -16,45 +18,64 @@ declare global {
   }
 }
 
-export default function LoginSocial({ mac, termsText, showGoogle, showFacebook, onSuccess }: Props) {
+export default function LoginSocial({
+  mac, termsText, showGoogle, showFacebook,
+  googleClientId, facebookAppId, onSuccess
+}: Props) {
   const [consent, setConsent] = useState(false)
   const [loading, setLoading] = useState<'google' | 'facebook' | null>(null)
   const [error,   setError]   = useState('')
 
-  const exchange = async (provider: 'google' | 'facebook', token: string) => {
-    const { data } = await axios.post('/portal/auth/social', { provider, token, mac })
+  // Backend field name is `accessToken` — was incorrectly `token` before
+  const exchange = async (provider: 'google' | 'facebook', accessToken: string) => {
+    const { data } = await axios.post('/portal/auth/social', { provider, accessToken, mac })
     onSuccess(data.redirectUrl)
   }
 
   const handleGoogle = () => {
     if (!consent) { setError('Please accept the terms to continue.'); return }
+    const clientId = googleClientId ?? import.meta.env.VITE_GOOGLE_CLIENT_ID
+    if (!clientId) { setError('Google login is not configured.'); return }
+    if (!window.google) { setError('Google SDK not loaded. Check your connection.'); return }
+
     setError(''); setLoading('google')
 
-    window.google?.accounts.id.initialize({
-      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+    window.google.accounts.id.initialize({
+      client_id: clientId,
       callback: async (response: any) => {
         try {
+          // GIS returns an ID token in response.credential — send it as accessToken.
+          // The backend calls /oauth2/v3/userinfo with Bearer {token}; this works
+          // for access tokens. For full ID-token verification, upgrade to tokeninfo endpoint.
           await exchange('google', response.credential)
         } catch (err: any) {
-          setError(err.response?.data?.error ?? 'Google sign-in failed.')
+          setError(err.response?.data?.error ?? 'Google sign-in failed. Please try again.')
         } finally {
           setLoading(null)
         }
       },
     })
-    window.google?.accounts.id.prompt()
+    window.google.accounts.id.prompt((notification: any) => {
+      // If the one-tap popup was suppressed or dismissed
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        setLoading(null)
+        setError('Google sign-in was dismissed. Please try again.')
+      }
+    })
   }
 
   const handleFacebook = () => {
     if (!consent) { setError('Please accept the terms to continue.'); return }
+    if (!window.FB) { setError('Facebook SDK not loaded. Check your connection.'); return }
+
     setError(''); setLoading('facebook')
 
-    window.FB?.login(async (res: any) => {
+    window.FB.login(async (res: any) => {
       if (res.status === 'connected') {
         try {
           await exchange('facebook', res.authResponse.accessToken)
         } catch (err: any) {
-          setError(err.response?.data?.error ?? 'Facebook sign-in failed.')
+          setError(err.response?.data?.error ?? 'Facebook sign-in failed. Please try again.')
         }
       } else {
         setError('Facebook sign-in was cancelled.')
@@ -63,17 +84,29 @@ export default function LoginSocial({ mac, termsText, showGoogle, showFacebook, 
     }, { scope: 'public_profile,email' })
   }
 
+  const noSDK = showGoogle && !window.google && !import.meta.env.VITE_GOOGLE_CLIENT_ID && !googleClientId
+
   return (
     <div>
       {error && <div className="error-msg">{error}</div>}
 
+      {noSDK && (
+        <div className="error-msg" style={{ background: '#FFF9C4', color: '#795548' }}>
+          Social login keys are not configured. Contact the administrator.
+        </div>
+      )}
+
       <div className="consent" style={{ marginBottom: '1.25rem' }}>
-        <input type="checkbox" id="consent-s" checked={consent} onChange={e => setConsent(e.target.checked)} />
-        <label htmlFor="consent-s" style={{ fontWeight: 400, marginBottom: 0 }}>{termsText}</label>
+        <input type="checkbox" id="consent-s" checked={consent}
+          onChange={e => setConsent(e.target.checked)} />
+        <label htmlFor="consent-s" style={{ fontWeight: 400, marginBottom: 0 }}>
+          {termsText}
+        </label>
       </div>
 
       {showGoogle && (
-        <button className="btn btn-social" onClick={handleGoogle} disabled={loading !== null}>
+        <button className="btn btn-social" onClick={handleGoogle}
+          disabled={loading !== null || !!noSDK}>
           {loading === 'google'
             ? <div className="spinner" style={{ borderTopColor: '#4285F4', borderColor: '#e0e0e0' }} />
             : <>
@@ -92,7 +125,8 @@ export default function LoginSocial({ mac, termsText, showGoogle, showFacebook, 
       {showGoogle && showFacebook && <div className="divider">or</div>}
 
       {showFacebook && (
-        <button className="btn btn-social" onClick={handleFacebook} disabled={loading !== null}>
+        <button className="btn btn-social" onClick={handleFacebook}
+          disabled={loading !== null}>
           {loading === 'facebook'
             ? <div className="spinner" style={{ borderTopColor: '#1877F2', borderColor: '#e0e0e0' }} />
             : <>

@@ -38,12 +38,80 @@ services:
       PORT:         4000
       DATABASE_URL: postgresql://${POSTGRES_USER:-wifi}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-wifi_platform}
       REDIS_URL:    redis://redis:6379
-      # All other secrets injected via Coolify environment variables:
-      # JWT_SECRET, ENCRYPTION_KEY, SENDGRID_API_KEY, EMAIL_FROM, EMAIL_FROM_NAME,
-      # TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM,
-      # AT_API_KEY, AT_USERNAME, AT_FROM,
-      # GOOGLE_CLIENT_ID, FACEBOOK_APP_ID, FACEBOOK_APP_SECRET,
-      # SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASSWORD, ALLOWED_ORIGINS
+
+      # Portal tenant resolution fallback.
+      # When the Host header doesn't match any tenant domain in the DB,
+      # the middleware tries this value next.
+      # Local dev: leave as "localhost" (browser hits localhost:3003 → nginx Host: localhost).
+      # Production: set to your platform's portal domain, or leave empty to enforce strict matching.
+      PORTAL_DEFAULT_DOMAIN: ${PORTAL_DEFAULT_DOMAIN:-localhost}
+
+      # ── Set all of the following in Coolify → Environment Variables ──────
+      #
+      # Security (REQUIRED — change from defaults before going live):
+      #   JWT_SECRET              min 32 chars
+      #   ENCRYPTION_KEY          min 32 chars
+      #
+      # CORS (REQUIRED in production):
+      #   ALLOWED_ORIGINS         e.g. https://dashboard.yourdomain.com,https://admin.yourdomain.com
+      #
+      # Billing callback URLs:
+      #   BILLING_SUCCESS_URL     e.g. https://dashboard.yourdomain.com/billing?success=1
+      #   BILLING_CANCEL_URL      e.g. https://dashboard.yourdomain.com/billing?cancelled=1
+      #
+      # Email (SendGrid):
+      #   SENDGRID_API_KEY
+      #   EMAIL_FROM              noreply@yourdomain.com
+      #   EMAIL_FROM_NAME         WiFi Platform
+      #
+      # SMS primary (Twilio):
+      #   TWILIO_ACCOUNT_SID
+      #   TWILIO_AUTH_TOKEN
+      #   TWILIO_FROM             +1234567890
+      #
+      # SMS fallback (Africa's Talking):
+      #   AT_API_KEY
+      #   AT_USERNAME
+      #   AT_FROM                 (shortcode or sender ID)
+      #
+      # Social login:
+      #   GOOGLE_CLIENT_ID
+      #   FACEBOOK_APP_ID
+      #   FACEBOOK_APP_SECRET
+      #
+      # Payment — Stripe:
+      #   STRIPE_SECRET_KEY
+      #   STRIPE_WEBHOOK_SECRET
+      #   STRIPE_PRICE_STARTER    price_xxx
+      #   STRIPE_PRICE_GROWTH     price_xxx
+      #   STRIPE_PRICE_PRO        price_xxx
+      #
+      # Payment — Paystack:
+      #   PAYSTACK_SECRET_KEY     sk_live_xxx
+      #   PAYSTACK_PUBLIC_KEY     pk_live_xxx
+      #
+      # Payment — Flutterwave:
+      #   FLW_SECRET_KEY          FLWSECK-xxx
+      #   FLW_PUBLIC_KEY          FLWPUBK-xxx
+      #   FLW_ENCRYPTION_KEY      (12-char key)
+      #
+      # Payment — M-Pesa (Daraja):
+      #   MPESA_CONSUMER_KEY
+      #   MPESA_CONSUMER_SECRET
+      #   MPESA_SHORTCODE         (Paybill or Till)
+      #   MPESA_PASSKEY
+      #   MPESA_CALLBACK_URL      https://api.yourdomain.com/billing/webhook/mpesa
+      #
+      # Payment — Pesapal:
+      #   PESAPAL_CONSUMER_KEY
+      #   PESAPAL_CONSUMER_SECRET
+      #   PESAPAL_IPN_URL         https://api.yourdomain.com/billing/webhook/pesapal
+      #   PESAPAL_ENV             live  (or sandbox for testing)
+      #
+      # Seed:
+      #   SUPER_ADMIN_EMAIL       admin@yourdomain.com
+      #   SUPER_ADMIN_PASSWORD    (strong password)
+
     ports:
       - "4000:4000"
     depends_on:
@@ -51,7 +119,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: sh -c "npx prisma db push --accept-data-loss && node dist/prisma/seed.js && node dist/src/index.js"
+    command: >
+      sh -c "
+        npx prisma db push --accept-data-loss &&
+        node dist/prisma/seed.js &&
+        node dist/src/index.js
+      "
 
   dashboard:
     build:
