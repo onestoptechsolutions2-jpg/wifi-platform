@@ -10,12 +10,6 @@ datasource db {
 
 // ── Enums ─────────────────────────────────────────────────────────────────
 
-enum Plan {
-  starter
-  growth
-  pro
-}
-
 enum TenantStatus {
   trial
   active
@@ -75,7 +69,7 @@ model Tenant {
   id        String       @id @default(uuid())
   name      String
   domain    String       @unique   // e.g. wifi.javacafe.com
-  plan      Plan         @default(starter)
+  plan      String       @default("starter")
   status    TenantStatus @default(trial)
   createdAt DateTime     @default(now()) @map("created_at")
   updatedAt DateTime     @updatedAt @map("updated_at")
@@ -231,7 +225,7 @@ model Payment {
   gateway   PaymentGateway
   reference String?        // gateway transaction / checkout ID
   status    PaymentStatus  @default(pending)
-  plan      Plan
+  plan      String
   paidAt    DateTime?      @map("paid_at")
   createdAt DateTime       @default(now()) @map("created_at")
   metadata  Json?          // gateway-specific payload
@@ -253,6 +247,15 @@ model OtpCode {
 
   @@index([phone, tenantId])
   @@map("otp_codes")
+}
+
+// Platform-wide settings (key/value store)
+model PlatformSettings {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_settings")
 }
 
 // Editable plan definitions — managed via super-admin /plans API

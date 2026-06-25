@@ -1,14 +1,18 @@
-/**
- * Seed script — idempotent
- * Creates super admin, demo tenant, and default plan definitions on first run.
- */
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcrypt'
 
 const prisma = new PrismaClient()
 
+async function upsertSetting(key: string, value: string) {
+  await prisma.platformSettings.upsert({
+    where:  { key },
+    update: {},      // never overwrite if admin changed it
+    create: { key, value },
+  })
+}
+
 async function main() {
-  console.log('🌱 Seeding database...')
+  console.log('Seeding database...')
 
   // ── Super admin ────────────────────────────────────────────────────────
   const superAdminEmail = process.env.SUPER_ADMIN_EMAIL    ?? 'admin@yourplatform.com'
@@ -24,31 +28,28 @@ async function main() {
         role:     'super_admin',
       },
     })
-    console.log(`✅ Super admin created: ${superAdminEmail}`)
+    console.log('Super admin created:', superAdminEmail)
   } else {
-    console.log(`ℹ️  Super admin already exists: ${superAdminEmail}`)
+    console.log('Super admin exists:', superAdminEmail)
   }
 
   // ── Demo tenant ────────────────────────────────────────────────────────
   const demoTargetDomain = process.env.PORTAL_DEFAULT_DOMAIN ?? 'localhost'
 
-  const oldDomains = ['demo.localhost', 'demo.wifi.com']
-  for (const old of oldDomains) {
+  for (const old of ['demo.localhost', 'demo.wifi.com']) {
     const stale = await prisma.tenant.findUnique({ where: { domain: old } })
     if (stale) {
       const targetExists = await prisma.tenant.findUnique({ where: { domain: demoTargetDomain } })
       if (!targetExists) {
         await prisma.tenant.update({ where: { id: stale.id }, data: { domain: demoTargetDomain } })
-        console.log(`🔄 Migrated demo tenant domain: ${old} → ${demoTargetDomain}`)
-      } else {
-        console.log(`ℹ️  Demo tenant already exists on ${demoTargetDomain}; stale row ${old} left as-is`)
+        console.log('Migrated demo tenant domain:', old, '->', demoTargetDomain)
       }
     }
   }
 
   const demoExists = await prisma.tenant.findUnique({ where: { domain: demoTargetDomain } })
   if (!demoExists) {
-    const tenant = await prisma.tenant.create({
+    await prisma.tenant.create({
       data: {
         name:              'Demo Coffee Shop',
         domain:            demoTargetDomain,
@@ -63,8 +64,6 @@ async function main() {
         loginEmail:        true,
         loginPhone:        true,
         loginClickthrough: true,
-        loginGoogle:       false,
-        loginFacebook:     false,
         users: {
           create: {
             name:     'Demo Owner',
@@ -75,10 +74,16 @@ async function main() {
         },
       },
     })
-    console.log(`✅ Demo tenant created: ${tenant.domain}`)
+    console.log('Demo tenant created:', demoTargetDomain)
   } else {
-    console.log(`ℹ️  Demo tenant already exists: ${demoExists.domain}`)
+    console.log('Demo tenant exists:', demoExists.domain)
   }
+
+  // ── Platform settings ──────────────────────────────────────────────────
+  await upsertSetting('defaultCurrency', 'USD')
+  await upsertSetting('platformName',    'WiFi Marketing Platform')
+  await upsertSetting('supportEmail',    superAdminEmail)
+  console.log('Platform settings seeded')
 
   // ── Plan definitions ───────────────────────────────────────────────────
   const defaultPlans = [
@@ -90,21 +95,8 @@ async function main() {
       color:       '#1B5FAD',
       accentColor: '#EFF6FF',
       sortOrder:   1,
-      features: [
-        '1 location',
-        '500 portal logins / month',
-        '7-day analytics retention',
-        'Email & phone login',
-        'Custom branding & colors',
-        'MikroTik, UniFi, Omada support',
-      ],
-      missing: [
-        'SMS campaigns',
-        'Email campaigns',
-        'White-label (removes platform branding)',
-        'API access',
-        'Priority support',
-      ],
+      features:    ['1 location','500 portal logins / month','7-day analytics retention','Email & phone login','Custom branding & colors','MikroTik, UniFi, Omada support'],
+      missing:     ['SMS campaigns','Email campaigns','White-label','API access','Priority support'],
     },
     {
       key:         'growth',
@@ -114,20 +106,8 @@ async function main() {
       color:       '#7C3AED',
       accentColor: '#F5F3FF',
       sortOrder:   2,
-      features: [
-        'Up to 3 locations',
-        '2,000 portal logins / month',
-        '30-day analytics retention',
-        'All login methods (email, phone, social, guest)',
-        'Custom branding & colors',
-        'All hardware vendors',
-        'SMS & Email campaigns',
-      ],
-      missing: [
-        'White-label (removes platform branding)',
-        'API access',
-        'Priority support',
-      ],
+      features:    ['Up to 3 locations','2,000 portal logins / month','30-day analytics retention','All login methods','Custom branding & colors','All hardware vendors','SMS & Email campaigns'],
+      missing:     ['White-label','API access','Priority support'],
     },
     {
       key:         'pro',
@@ -137,32 +117,20 @@ async function main() {
       color:       '#059669',
       accentColor: '#ECFDF5',
       sortOrder:   3,
-      features: [
-        'Unlimited locations',
-        'Unlimited portal logins',
-        '12-month analytics retention',
-        'All login methods',
-        'Custom branding & colors',
-        'All hardware vendors',
-        'SMS & Email campaigns',
-        'White-label (no platform branding)',
-        'API access',
-        'Priority support',
-      ],
-      missing: [],
+      features:    ['Unlimited locations','Unlimited portal logins','12-month analytics retention','All login methods','Custom branding & colors','All hardware vendors','SMS & Email campaigns','White-label','API access','Priority support'],
+      missing:     [],
     },
   ]
 
   for (const plan of defaultPlans) {
     await prisma.planDefinition.upsert({
       where:  { key: plan.key },
-      update: {},          // never overwrite if admin has edited
+      update: {},          // never overwrite admin edits
       create: plan,
     })
   }
-  console.log('✅ Plan definitions seeded (existing ones untouched)')
-
-  console.log('✅ Seed complete')
+  console.log('Plan definitions seeded')
+  console.log('Seed complete')
 }
 
 main()

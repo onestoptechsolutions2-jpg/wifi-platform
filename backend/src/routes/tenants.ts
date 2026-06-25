@@ -68,7 +68,7 @@ const tenantsRoutes: FastifyPluginAsync = async (fastify) => {
     const body = z.object({
       name:          z.string().min(1),
       domain:        z.string().min(3),
-      plan:          z.enum(['starter', 'growth', 'pro']).default('starter'),
+      plan:          z.string().min(1).default('starter'),
       billingEmail:  z.string().email().optional(),
       adminName:     z.string().min(1),
       adminEmail:    z.string().email(),
@@ -179,7 +179,7 @@ const tenantPatchSchema = z.object({
   // Identity
   name:         z.string().nullish(),
   domain:       z.string().nullish(),
-  plan:         z.enum(['starter','growth','pro']).optional(),
+  plan:         z.string().optional(),
   status:       z.enum(['trial','active','suspended']).optional(),
   // Branding — nullish so DB nulls round-trip without throwing
   logoUrl:      z.string().nullish(),

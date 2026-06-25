@@ -77,7 +77,7 @@ export default async function billingRoutes(app: FastifyInstance) {
     const tenantId = getTenantId(request)
     const schema = z.object({
       gateway:   z.enum(['stripe', 'paystack', 'flutterwave', 'pesapal']),
-      plan:      z.enum(['starter', 'growth', 'pro']),
+      plan:      z.string().min(1),
       currency:  z.string().default('USD'),
       firstName: z.string().optional(),
       lastName:  z.string().optional(),
@@ -124,7 +124,7 @@ export default async function billingRoutes(app: FastifyInstance) {
   app.post('/mpesa/stk', { preHandler: app.authenticate }, async (request: any, reply) => {
     const tenantId = getTenantId(request)
     const { plan, phone } = z.object({
-      plan:  z.enum(['starter', 'growth', 'pro']),
+      plan:  z.string().min(1),
       phone: z.string().regex(/^254\d{9}$/, 'Phone must be 254XXXXXXXXX format'),
     }).parse(request.body)
 
