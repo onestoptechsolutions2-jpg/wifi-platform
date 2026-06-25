@@ -1,11 +1,12 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Install all dependencies (dev included — needed for tsc + prisma CLI)
+# OpenSSL needed by Prisma engine
+RUN apk add --no-cache openssl
+
 COPY package.json ./
 RUN npm install --legacy-peer-deps
 
-# Copy source and generate Prisma client + compile
 COPY . .
 RUN npx prisma generate
 RUN npx tsc --noEmitOnError false || true
@@ -16,10 +17,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=4000
 
-COPY package.json ./
+# OpenSSL needed by Prisma at runtime
+RUN apk add --no-cache openssl
 
-# Copy compiled JS, Prisma schema, and the full node_modules
-# (node_modules includes the generated Prisma client — no need to regenerate)
+COPY package.json ./
 COPY --from=builder /app/dist        ./dist
 COPY --from=builder /app/prisma      ./prisma
 COPY --from=builder /app/node_modules ./node_modules
