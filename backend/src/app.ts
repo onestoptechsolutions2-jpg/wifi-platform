@@ -17,6 +17,7 @@ import campaignRoutes     from './routes/campaigns.js'
 import portalConfigRoutes from './routes/portal/config.js'
 import portalAuthRoutes   from './routes/portal/auth.js'
 import billingRoutes      from './routes/billing.js'
+import plansRoutes        from './routes/plans.js'
 
 export async function buildApp() {
   const app = Fastify({
@@ -85,6 +86,7 @@ export async function buildApp() {
   await app.register(portalConfigRoutes,  { prefix: '/portal/config' })
   await app.register(portalAuthRoutes,    { prefix: '/portal/auth' })
   await app.register(billingRoutes,       { prefix: '/billing' })
+  await app.register(plansRoutes,         { prefix: '/plans' })
 
   return app
 }

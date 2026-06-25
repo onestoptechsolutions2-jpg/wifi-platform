@@ -254,3 +254,20 @@ model OtpCode {
   @@index([phone, tenantId])
   @@map("otp_codes")
 }
+
+// Editable plan definitions — managed via super-admin /plans API
+model PlanDefinition {
+  key         String   @id                 // "starter" | "growth" | "pro"
+  label       String
+  price       Float
+  currency    String   @default("USD")
+  color       String   @default("#1B5FAD")
+  accentColor String   @default("#EFF6FF") @map("accent_color")
+  features    String[] @default([])
+  missing     String[] @default([])
+  isActive    Boolean  @default(true)      @map("is_active")
+  sortOrder   Int      @default(0)         @map("sort_order")
+  updatedAt   DateTime @updatedAt          @map("updated_at")
+
+  @@map("plan_definitions")
+}

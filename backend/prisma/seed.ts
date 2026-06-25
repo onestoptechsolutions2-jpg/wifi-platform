@@ -1,10 +1,6 @@
 /**
  * Seed script — idempotent
- * Creates super admin + demo tenant on first run.
- * Migrates demo.localhost → localhost if old row exists.
- *
- * Run via: node dist/prisma/seed.js   (from docker-compose startup)
- *      or: npx tsx prisma/seed.ts     (local dev)
+ * Creates super admin, demo tenant, and default plan definitions on first run.
  */
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcrypt'
@@ -34,17 +30,8 @@ async function main() {
   }
 
   // ── Demo tenant ────────────────────────────────────────────────────────
-  //
-  // Domain resolution in resolveTenant middleware:
-  //   - strips port: "localhost:3003" → "localhost"
-  //   - falls back to PORTAL_DEFAULT_DOMAIN env var (default: "localhost")
-  //
-  // So the demo tenant domain must be "localhost" for local dev.
-  // In production each tenant gets their own domain (e.g. wifi.javacafe.com).
-  //
   const demoTargetDomain = process.env.PORTAL_DEFAULT_DOMAIN ?? 'localhost'
 
-  // Migrate old domain if it exists from a previous seed run
   const oldDomains = ['demo.localhost', 'demo.wifi.com']
   for (const old of oldDomains) {
     const stale = await prisma.tenant.findUnique({ where: { domain: old } })
@@ -59,7 +46,6 @@ async function main() {
     }
   }
 
-  // Create fresh if still absent
   const demoExists = await prisma.tenant.findUnique({ where: { domain: demoTargetDomain } })
   if (!demoExists) {
     const tenant = await prisma.tenant.create({
@@ -93,6 +79,88 @@ async function main() {
   } else {
     console.log(`ℹ️  Demo tenant already exists: ${demoExists.domain}`)
   }
+
+  // ── Plan definitions ───────────────────────────────────────────────────
+  const defaultPlans = [
+    {
+      key:         'starter',
+      label:       'Starter',
+      price:       99,
+      currency:    'USD',
+      color:       '#1B5FAD',
+      accentColor: '#EFF6FF',
+      sortOrder:   1,
+      features: [
+        '1 location',
+        '500 portal logins / month',
+        '7-day analytics retention',
+        'Email & phone login',
+        'Custom branding & colors',
+        'MikroTik, UniFi, Omada support',
+      ],
+      missing: [
+        'SMS campaigns',
+        'Email campaigns',
+        'White-label (removes platform branding)',
+        'API access',
+        'Priority support',
+      ],
+    },
+    {
+      key:         'growth',
+      label:       'Growth',
+      price:       199,
+      currency:    'USD',
+      color:       '#7C3AED',
+      accentColor: '#F5F3FF',
+      sortOrder:   2,
+      features: [
+        'Up to 3 locations',
+        '2,000 portal logins / month',
+        '30-day analytics retention',
+        'All login methods (email, phone, social, guest)',
+        'Custom branding & colors',
+        'All hardware vendors',
+        'SMS & Email campaigns',
+      ],
+      missing: [
+        'White-label (removes platform branding)',
+        'API access',
+        'Priority support',
+      ],
+    },
+    {
+      key:         'pro',
+      label:       'Pro',
+      price:       349,
+      currency:    'USD',
+      color:       '#059669',
+      accentColor: '#ECFDF5',
+      sortOrder:   3,
+      features: [
+        'Unlimited locations',
+        'Unlimited portal logins',
+        '12-month analytics retention',
+        'All login methods',
+        'Custom branding & colors',
+        'All hardware vendors',
+        'SMS & Email campaigns',
+        'White-label (no platform branding)',
+        'API access',
+        'Priority support',
+      ],
+      missing: [],
+    },
+  ]
+
+  for (const plan of defaultPlans) {
+    await prisma.planDefinition.upsert({
+      where:  { key: plan.key },
+      update: {},          // never overwrite if admin has edited
+      create: plan,
+    })
+  }
+  console.log('✅ Plan definitions seeded (existing ones untouched)')
 
   console.log('✅ Seed complete')
 }
