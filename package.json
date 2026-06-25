@@ -1,0 +1,26 @@
+{
+  "name": "wifi-platform",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "portal",
+    "dashboard",
+    "admin"
+  ],
+  "scripts": {
+    "dev:backend":    "yarn workspace backend dev",
+    "dev:portal":     "yarn workspace portal dev",
+    "dev:dashboard":  "yarn workspace dashboard dev",
+    "dev:admin":      "yarn workspace admin dev",
+    "build:portal":   "yarn workspace portal build",
+    "build:dashboard":"yarn workspace dashboard build",
+    "build:admin":    "yarn workspace admin build",
+    "db:generate":    "yarn workspace backend prisma:generate",
+    "db:migrate":     "yarn workspace backend prisma:migrate",
+    "db:studio":      "yarn workspace backend prisma:studio"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
