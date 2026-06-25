@@ -35,7 +35,7 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV:     production
-      PORT:         3000
+      PORT:         4000
       DATABASE_URL: postgresql://${POSTGRES_USER:-wifi}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-wifi_platform}
       REDIS_URL:    redis://redis:6379
       # All other secrets injected via Coolify environment variables:
@@ -45,7 +45,7 @@ services:
       # GOOGLE_CLIENT_ID, FACEBOOK_APP_ID, FACEBOOK_APP_SECRET,
       # SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASSWORD, ALLOWED_ORIGINS
     ports:
-      - "3000:3000"
+      - "4000:4000"
     depends_on:
       postgres:
         condition: service_healthy
