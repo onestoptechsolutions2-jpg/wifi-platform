@@ -23,14 +23,4 @@ api.interceptors.response.use(
       } catch {
         localStorage.removeItem('access_token')
         // Guard: without this check, page reloads -> AuthProvider calls /auth/me
-        // -> 401 -> interceptor retries -> infinite loop (20-60s freeze in logs).
-        if (!window.location.pathname.startsWith('/login')) {
-          window.location.href = '/login'
-        }
-      }
-    }
-    return Promise.reject(err)
-  }
-)
-
-export default api
+        // -> 401 -> intercep
